@@ -1,3 +1,7 @@
+## v1.0.0-beta.3 - 2022-10-04
+
+Some improvements.
+
 ## v1.0.0-beta.2 - 2022-10-04
 
 Some improvements.
