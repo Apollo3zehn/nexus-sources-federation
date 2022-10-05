@@ -62,70 +62,41 @@ namespace Nexus.Sources
         public async Task<CatalogRegistration[]> GetCatalogRegistrationsAsync(string path, CancellationToken cancellationToken)
         {
             if (path == "/")
-            {
-                return new CatalogRegistration[] { new CatalogRegistration(_mountPath, default) };
-            }
+                path = _mountPath;
 
-            else
-            {
-                var catalogInfos = await _nexusClient.Catalogs.GetChildCatalogInfosAsync(GetOriginalCatalogId(path), cancellationToken);
+            var catalogInfos = await _nexusClient.Catalogs.GetChildCatalogInfosAsync(GetOriginalCatalogId(path), cancellationToken);
 
-                return catalogInfos
-                    .Where(catalogInfo => catalogInfo.Id != _mountPath)
-                    .Select(catalogInfo => new CatalogRegistration(GetExtendedCatalogId(catalogInfo.Id), catalogInfo.Title, IsTransient: true))
-                    .ToArray();
-            }
+            return catalogInfos
+                .Where(catalogInfo => catalogInfo.Id != _mountPath)
+                .Select(catalogInfo => new CatalogRegistration(GetExtendedCatalogId(catalogInfo.Id), catalogInfo.Title, IsTransient: true))
+                .ToArray();
         }
 
         public async Task<ResourceCatalog> GetCatalogAsync(string catalogId, CancellationToken cancellationToken)
         {
-            if (catalogId == _mountPath)
-            {
-                return new ResourceCatalog(catalogId);
-            }
+            var resourceCatalog = await _nexusClient.Catalogs.GetAsync(GetOriginalCatalogId(catalogId));
+            resourceCatalog = resourceCatalog with { Id = catalogId };
 
-            else
-            {
-                var resourceCatalog = await _nexusClient.Catalogs.GetAsync(GetOriginalCatalogId(catalogId));
-                resourceCatalog = resourceCatalog with { Id = catalogId };
+            var jsonString = JsonSerializer.Serialize(resourceCatalog, _jsonSerializerOptions);
+            var actualResourceCatalog = JsonSerializer.Deserialize<ResourceCatalog>(jsonString, _jsonSerializerOptions)!;
 
-                var jsonString = JsonSerializer.Serialize(resourceCatalog, _jsonSerializerOptions);
-                var actualResourceCatalog = JsonSerializer.Deserialize<ResourceCatalog>(jsonString, _jsonSerializerOptions)!;
-
-                return actualResourceCatalog;
-            }
+            return actualResourceCatalog;
         }
 
         public async Task<double> GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
-            if (catalogId == _mountPath)
-            {
-                return 1.0;
-            }
+            var availability = await _nexusClient.Catalogs
+                .GetAvailabilityAsync(GetOriginalCatalogId(catalogId), begin, end, (end - begin), cancellationToken);
 
-            else
-            {
-                var availability = await _nexusClient.Catalogs
-                    .GetAvailabilityAsync(GetOriginalCatalogId(catalogId), begin, end, (end - begin), cancellationToken);
-
-                return availability.Data[0];
-            }
+            return availability.Data[0];
         }
 
         public async Task<(DateTime Begin, DateTime End)> GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
         {
-            if (catalogId == _mountPath)
-            {
-                return (DateTime.MinValue, DateTime.MaxValue);
-            }
+            var timeRange = await _nexusClient.Catalogs
+                .GetTimeRangeAsync(GetOriginalCatalogId(catalogId), cancellationToken);
 
-            else
-            {
-                var timeRange = await _nexusClient.Catalogs
-                    .GetTimeRangeAsync(GetOriginalCatalogId(catalogId), cancellationToken);
-
-                return (timeRange.Begin, timeRange.End);
-        }
+            return (timeRange.Begin, timeRange.End);
             }
 
         public async Task ReadAsync(DateTime begin, DateTime end, ReadRequest[] requests, ReadDataHandler readData, IProgress<double> progress, CancellationToken cancellationToken)
