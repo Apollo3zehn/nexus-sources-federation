@@ -39,7 +39,7 @@ namespace Nexus.Sources
             };
 
             // token
-            var token = _context.SourceConfiguration.GetStringValue($"access-token");
+            var token = _context.SourceConfiguration?.GetStringValue($"access-token");
 
             if (token is null)
                 throw new Exception("The access-token property is not set.");
@@ -49,7 +49,7 @@ namespace Nexus.Sources
             _nexusClient = new Api.NexusClient(httpClient);
 
             // mount-path
-            var mountPath = _context.SourceConfiguration.GetStringValue($"mount-path");
+            var mountPath = _context.SourceConfiguration?.GetStringValue($"mount-path");
 
             if (mountPath is null)
                 throw new Exception("The mount-path property is not set.");

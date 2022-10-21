@@ -9,8 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Nexus.Api" Version="1.0.0-beta.11.216" />
-    <PackageReference Include="Nexus.Extensibility" Version="1.0.0-beta.11.216">
+    <PackageReference Include="Nexus.Api" Version="1.0.0-beta.11.252" />
+    <PackageReference Include="Nexus.Extensibility" Version="1.0.0-beta.11.252">
       <ExcludeAssets>runtime;native</ExcludeAssets>
     </PackageReference>
   </ItemGroup>
