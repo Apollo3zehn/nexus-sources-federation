@@ -1,4 +1,4 @@
-## v1.0.0 2022-10-29
+## v1.0.0 - 2022-10-29
 
 This is the first release.
 
