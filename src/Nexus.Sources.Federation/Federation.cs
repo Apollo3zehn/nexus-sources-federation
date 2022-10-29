@@ -103,8 +103,8 @@ namespace Nexus.Sources
         {
             foreach (var request in requests)
             {
-                var streamResponse = await _nexusClient.Data.GetStreamAsync(GetOriginalCatalogId(request.CatalogItem.ToPath()), begin, end, cancellationToken);
-                var stream = await streamResponse.GetStreamAsync();
+                var response = await _nexusClient.Data.GetStreamAsync(GetOriginalCatalogId(request.CatalogItem.ToPath()), begin, end, cancellationToken);
+                var stream = await response.Content.ReadAsStreamAsync();
                 var targetBuffer = request.Data;
 
                 while (targetBuffer.Length > 0)
