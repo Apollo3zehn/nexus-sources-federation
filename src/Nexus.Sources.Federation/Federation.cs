@@ -75,7 +75,7 @@ namespace Nexus.Sources
         public async Task<CatalogRegistration[]> GetCatalogRegistrationsAsync(string path, CancellationToken cancellationToken)
         {
             if (path == "/")
-                path = _mountPoint + "/";
+                path = _mountPoint;
 
             var catalogInfos = await _nexusClient.Catalogs.GetChildCatalogInfosAsync(ToSourcePathPrefixedCatalogId(path), cancellationToken);
 
