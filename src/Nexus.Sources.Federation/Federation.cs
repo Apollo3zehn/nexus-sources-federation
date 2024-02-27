@@ -16,7 +16,7 @@ namespace Nexus.Sources
     {
         private DataSourceContext _context = default!;
         private Api.NexusClient _nexusClient = default!;
-        private string _sourcePath = default!;
+        private string _sourcePath = "/";
         private string _mountPoint = default!;
         private string _includePattern = default!;
 
@@ -53,7 +53,9 @@ namespace Nexus.Sources
 
             // source-path
             var sourcePath = _context.SourceConfiguration?.GetStringValue($"source-path");
-            _sourcePath = sourcePath ?? "";
+
+            if (sourcePath is not null)
+                _sourcePath = sourcePath;
 
             // mount-point
             var mountPoint = _context.SourceConfiguration?.GetStringValue($"mount-point");
@@ -130,12 +132,12 @@ namespace Nexus.Sources
 
         private string ToMountPointPrefixedCatalogId(string catalogId)
         {
-            return _mountPoint + catalogId.Substring(_sourcePath.Length + 1);
+            return _mountPoint + catalogId.Substring(_sourcePath.Length);
         }
 
         private string ToSourcePathPrefixedCatalogId(string catalogId)
         {
-            return _sourcePath + catalogId.Substring(_mountPoint.Length + 1);
+            return _sourcePath + catalogId.Substring(_mountPoint.Length);
         }
     }
 }
