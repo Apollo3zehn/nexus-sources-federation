@@ -17,7 +17,7 @@ namespace Nexus.Sources
         private DataSourceContext _context = default!;
         private Api.INexusClient _nexusClient = default!;
         private string _sourcePath = "/";
-        private string _mountPoint = default!;
+        private string _mountPoint = "/";
         private string _includePattern = default!;
 
         private static JsonSerializerOptions _jsonSerializerOptions;
@@ -63,10 +63,8 @@ namespace Nexus.Sources
             // mount-point
             var mountPoint = _context.SourceConfiguration?.GetStringValue($"mount-point");
 
-            if (mountPoint is null)
-                throw new Exception("The mount-point property is not set.");
-
-            _mountPoint = '/' + mountPoint.Trim('/');
+            if (mountPoint is not null)
+                _mountPoint = '/' + mountPoint.Trim('/');
 
             // include-pattern
             var includePattern = _context.SourceConfiguration?.GetStringValue($"include-pattern");

@@ -21,8 +21,8 @@ public class FederationTests
     [InlineData("/", "/mnt/", "/mnt/TEST_CATALOG")]
     [InlineData("/", "mnt/", "/mnt/TEST_CATALOG")]
     [InlineData(default, "mnt", "/mnt/TEST_CATALOG")]
-    [InlineData("src", "", "/TEST_CATALOG")]
-    public async Task ProvidesCatalogRegistrations(string? sourcePath, string mountPoint, string expectedCatalogId)
+    [InlineData("src", default, "/TEST_CATALOG")]
+    public async Task ProvidesCatalogRegistrations(string? sourcePath, string? mountPoint, string expectedCatalogId)
     {
         // arrange
         var catalogsClient = Mock.Of<ICatalogsClient>();
