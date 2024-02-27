@@ -15,7 +15,7 @@ namespace Nexus.Sources
     public class Federation : IDataSource
     {
         private DataSourceContext _context = default!;
-        private Api.NexusClient _nexusClient = default!;
+        private Api.INexusClient _nexusClient = default!;
         private string _sourcePath = "/";
         private string _mountPoint = default!;
         private string _includePattern = default!;
@@ -27,6 +27,9 @@ namespace Nexus.Sources
             _jsonSerializerOptions = new JsonSerializerOptions();
             _jsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
         }
+
+        public Func<HttpClient, Api.INexusClient> CreateNexusClient { get; set; } 
+            = httpClient => new Api.NexusClient(httpClient);
 
         public Task SetContextAsync(DataSourceContext context, ILogger logger, CancellationToken cancellationToken)
         {
@@ -49,13 +52,13 @@ namespace Nexus.Sources
 
             httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("bearer", token);
 
-            _nexusClient = new Api.NexusClient(httpClient);
+            _nexusClient = CreateNexusClient(httpClient);
 
             // source-path
             var sourcePath = _context.SourceConfiguration?.GetStringValue($"source-path");
 
             if (sourcePath is not null)
-                _sourcePath = sourcePath;
+                _sourcePath = '/' + sourcePath.Trim('/');
 
             // mount-point
             var mountPoint = _context.SourceConfiguration?.GetStringValue($"mount-point");
@@ -63,9 +66,9 @@ namespace Nexus.Sources
             if (mountPoint is null)
                 throw new Exception("The mount-point property is not set.");
 
-            _mountPoint = mountPoint;
+            _mountPoint = '/' + mountPoint.Trim('/');
 
-            // source-path
+            // include-pattern
             var includePattern = _context.SourceConfiguration?.GetStringValue($"include-pattern");
             _includePattern = includePattern ?? "";
 
@@ -132,12 +135,14 @@ namespace Nexus.Sources
 
         private string ToMountPointPrefixedCatalogId(string catalogId)
         {
-            return _mountPoint + catalogId.Substring(_sourcePath.Length);
+            //                     absolute, relative
+            return Path.Combine(_mountPoint, catalogId.Substring(_sourcePath.Length).TrimStart('/'));
         }
 
         private string ToSourcePathPrefixedCatalogId(string catalogId)
         {
-            return _sourcePath + catalogId.Substring(_mountPoint.Length);
+            //                     absolute, relative
+            return Path.Combine(_sourcePath, catalogId.Substring(_mountPoint.Length).TrimStart('/'));
         }
     }
 }

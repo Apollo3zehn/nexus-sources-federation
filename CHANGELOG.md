@@ -1,3 +1,7 @@
+## v2.0.0-beta.6 - 2024-02-27
+
+- Fix prefix modification algorithm and add tests.
+
 ## v2.0.0-beta.5 - 2024-02-27
 
 - Fix prefix modification algorithm.
