@@ -1,3 +1,7 @@
+## v2.0.0-beta.3 - 2024-02-27
+
+- Fix prefix modification algorithm.
+
 ## v2.0.0-beta.2 - 2024-02-27
 
 - Enable federation of a sub catalog path.

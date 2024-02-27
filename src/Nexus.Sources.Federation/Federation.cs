@@ -130,12 +130,12 @@ namespace Nexus.Sources
 
         private string ToMountPointPrefixedCatalogId(string catalogId)
         {
-            return _mountPoint + catalogId.Substring(_sourcePath.Length);
+            return _mountPoint + catalogId.Substring(_sourcePath.Length + 1);
         }
 
         private string ToSourcePathPrefixedCatalogId(string catalogId)
         {
-            return _sourcePath + catalogId.Substring(_mountPoint.Length);
+            return _sourcePath + catalogId.Substring(_mountPoint.Length + 1);
         }
     }
 }
