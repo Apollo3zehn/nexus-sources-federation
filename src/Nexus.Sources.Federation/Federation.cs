@@ -1,6 +1,7 @@
 ﻿using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Nexus.DataModel;
 using Nexus.Extensibility;
@@ -15,7 +16,9 @@ namespace Nexus.Sources
     {
         private DataSourceContext _context = default!;
         private Api.NexusClient _nexusClient = default!;
-        private string _mountPath = default!;
+        private string _sourcePath = default!;
+        private string _mountPoint = default!;
+        private string _includePattern = default!;
 
         private static JsonSerializerOptions _jsonSerializerOptions;
 
@@ -48,13 +51,21 @@ namespace Nexus.Sources
 
             _nexusClient = new Api.NexusClient(httpClient);
 
-            // mount-path
-            var mountPath = _context.SourceConfiguration?.GetStringValue($"mount-path");
+            // source-path
+            var sourcePath = _context.SourceConfiguration?.GetStringValue($"source-path");
+            _sourcePath = sourcePath ?? "";
 
-            if (mountPath is null)
-                throw new Exception("The mount-path property is not set.");
+            // mount-point
+            var mountPoint = _context.SourceConfiguration?.GetStringValue($"mount-point");
 
-            _mountPath = mountPath;
+            if (mountPoint is null)
+                throw new Exception("The mount-point property is not set.");
+
+            _mountPoint = mountPoint;
+
+            // source-path
+            var includePattern = _context.SourceConfiguration?.GetStringValue($"include-pattern");
+            _includePattern = includePattern ?? "";
 
             return Task.CompletedTask;
         }
@@ -62,19 +73,19 @@ namespace Nexus.Sources
         public async Task<CatalogRegistration[]> GetCatalogRegistrationsAsync(string path, CancellationToken cancellationToken)
         {
             if (path == "/")
-                path = _mountPath + "/";
+                path = _mountPoint + "/";
 
-            var catalogInfos = await _nexusClient.Catalogs.GetChildCatalogInfosAsync(GetOriginalCatalogId(path), cancellationToken);
+            var catalogInfos = await _nexusClient.Catalogs.GetChildCatalogInfosAsync(ToSourcePathPrefixedCatalogId(path), cancellationToken);
 
             return catalogInfos
-                .Where(catalogInfo => catalogInfo.Id != _mountPath)
-                .Select(catalogInfo => new CatalogRegistration(GetExtendedCatalogId(catalogInfo.Id), catalogInfo.Title, IsTransient: true))
+                .Where(catalogInfo => Regex.IsMatch(catalogInfo.Id, _includePattern))
+                .Select(catalogInfo => new CatalogRegistration(ToMountPointPrefixedCatalogId(catalogInfo.Id), catalogInfo.Title, IsTransient: true))
                 .ToArray();
         }
 
         public async Task<ResourceCatalog> GetCatalogAsync(string catalogId, CancellationToken cancellationToken)
         {
-            var resourceCatalog = await _nexusClient.Catalogs.GetAsync(GetOriginalCatalogId(catalogId));
+            var resourceCatalog = await _nexusClient.Catalogs.GetAsync(ToSourcePathPrefixedCatalogId(catalogId));
             resourceCatalog = resourceCatalog with { Id = catalogId };
 
             var jsonString = JsonSerializer.Serialize(resourceCatalog, _jsonSerializerOptions);
@@ -86,7 +97,7 @@ namespace Nexus.Sources
         public async Task<double> GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken)
         {
             var availability = await _nexusClient.Catalogs
-                .GetAvailabilityAsync(GetOriginalCatalogId(catalogId), begin, end, (end - begin), cancellationToken);
+                .GetAvailabilityAsync(ToSourcePathPrefixedCatalogId(catalogId), begin, end, end - begin, cancellationToken);
 
             return availability.Data[0];
         }
@@ -94,7 +105,7 @@ namespace Nexus.Sources
         public async Task<(DateTime Begin, DateTime End)> GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
         {
             var timeRange = await _nexusClient.Catalogs
-                .GetTimeRangeAsync(GetOriginalCatalogId(catalogId), cancellationToken);
+                .GetTimeRangeAsync(ToSourcePathPrefixedCatalogId(catalogId), cancellationToken);
 
             return (timeRange.Begin, timeRange.End);
             }
@@ -103,7 +114,7 @@ namespace Nexus.Sources
         {
             foreach (var request in requests)
             {
-                var response = await _nexusClient.Data.GetStreamAsync(GetOriginalCatalogId(request.CatalogItem.ToPath()), begin, end, cancellationToken);
+                var response = await _nexusClient.Data.GetStreamAsync(ToSourcePathPrefixedCatalogId(request.CatalogItem.ToPath()), begin, end, cancellationToken);
                 var stream = await response.Content.ReadAsStreamAsync();
                 var targetBuffer = request.Data;
 
@@ -117,14 +128,14 @@ namespace Nexus.Sources
             }
         }
 
-        private string GetExtendedCatalogId(string catalogId)
+        private string ToMountPointPrefixedCatalogId(string catalogId)
         {
-            return _mountPath + catalogId;
+            return _mountPoint + catalogId.Substring(_sourcePath.Length);
         }
 
-        private string GetOriginalCatalogId(string catalogId)
+        private string ToSourcePathPrefixedCatalogId(string catalogId)
         {
-            return catalogId.Substring(_mountPath.Length);
+            return _sourcePath + catalogId.Substring(_mountPoint.Length);
         }
     }
 }
