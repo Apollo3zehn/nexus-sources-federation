@@ -1,3 +1,7 @@
+## v2.0.0-beta.24 - 2024-03-15
+
+- Follow Nexus changes.
+
 ## v2.0.0-beta.7 - 2024-02-27
 
 - Allow `mount-point` to be null.
