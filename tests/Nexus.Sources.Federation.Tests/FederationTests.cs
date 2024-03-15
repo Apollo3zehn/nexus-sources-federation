@@ -32,7 +32,7 @@ public class FederationTests
                 It.IsAny<string>(),
                 It.IsAny<CancellationToken>()
             ))
-            .ReturnsAsync((string catalogId, CancellationToken cancellationToken) => 
+            .ReturnsAsync((string catalogId, CancellationToken cancellationToken) =>
             {
                 Assert.True(catalogId.StartsWith('/'));
 
