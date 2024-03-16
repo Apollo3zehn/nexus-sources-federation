@@ -46,9 +46,9 @@ public class Federation : IDataSource
 
         // token
         var token = (_context.SourceConfiguration?.GetStringValue($"access-token")) ?? throw new Exception("The access-token property is not set.");
-        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("bearer", token);
 
         _nexusClient = CreateNexusClient(httpClient);
+        _nexusClient.SignIn(token);
 
         // source-path
         var sourcePath = _context.SourceConfiguration?.GetStringValue($"source-path");
