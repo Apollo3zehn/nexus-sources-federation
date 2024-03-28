@@ -1,9 +1,9 @@
 {
-    "authors": "https://github.com/malstroem-labs",
-    "company": "https://github.com/malstroem-labs",
-    "copyright": "malstroem-labs",
+    "authors": "https://github.com/nexus-main",
+    "company": "https://github.com/nexus-main",
+    "copyright": "nexus-main",
     "product": "nexus-sources-federation",
     "license": "MIT",
-    "project-url": "https://malstroem-labs.github.io/Nexus",
-    "repository-url": "https://github.com/malstroem-labs/nexus-sources-federation"
+    "project-url": "https://nexus-main.github.io/Nexus",
+    "repository-url": "https://github.com/nexus-main/nexus-sources-federation"
 }
