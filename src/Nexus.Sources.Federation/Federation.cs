@@ -74,6 +74,9 @@ public class Federation : IDataSource
         if (path == "/")
             path = _mountPoint;
 
+        else
+            path = path.TrimEnd('/');
+
         var catalogInfos = await _nexusClient.Catalogs.GetChildCatalogInfosAsync(ToSourcePathPrefixedCatalogId(path), cancellationToken);
 
         return catalogInfos
