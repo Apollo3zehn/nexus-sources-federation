@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Nexus.Api;
+using Nexus.Api.V1;
 using Nexus.Extensibility;
 using Xunit;
 
@@ -41,7 +42,7 @@ public class FederationTests
                     ? catalogId + "TEST_CATALOG"
                     : catalogId + "/" + "TEST_CATALOG";
 
-                var catalog = new CatalogInfo(childCatalogId, default, default, default, default, default, default, default, default, default, default, default!, default, default);
+                var catalog = new CatalogInfo(childCatalogId, default, default, default, default, default, default, default, default, default, default!, default!);
 
                 return new List<CatalogInfo>() { catalog };
             });
@@ -49,7 +50,7 @@ public class FederationTests
         var nexusClient = Mock.Of<INexusClient>();
 
         Mock.Get(nexusClient)
-            .SetupGet(client => client.Catalogs)
+            .SetupGet(client => client.V1.Catalogs)
             .Returns(catalogsClient);
 
         var dataSource = new Federation() { CreateNexusClient = _ => nexusClient } as IDataSource;
@@ -94,7 +95,7 @@ public class FederationTests
                 Assert.True(!catalogId.EndsWith('/'));
 
                 var childCatalogId = expectedCatalogId;
-                var catalog = new CatalogInfo(childCatalogId, default, default, default, default, default, default, default, default, default, default, default!, default, default);
+                var catalog = new CatalogInfo(childCatalogId, default, default, default, default, default, default, default, default, default, default!, default!);
 
                 return new List<CatalogInfo>() { catalog };
             });
@@ -102,7 +103,7 @@ public class FederationTests
         var nexusClient = Mock.Of<INexusClient>();
 
         Mock.Get(nexusClient)
-            .SetupGet(client => client.Catalogs)
+            .SetupGet(client => client.V1.Catalogs)
             .Returns(catalogsClient);
 
         var dataSource = new Federation() { CreateNexusClient = _ => nexusClient } as IDataSource;

@@ -1,5 +1,4 @@
-﻿using System.Net.Http.Headers;
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
@@ -77,7 +76,7 @@ public class Federation : IDataSource
         else
             path = path.TrimEnd('/');
 
-        var catalogInfos = await _nexusClient.Catalogs.GetChildCatalogInfosAsync(ToSourcePathPrefixedCatalogId(path), cancellationToken);
+        var catalogInfos = await _nexusClient.V1.Catalogs.GetChildCatalogInfosAsync(ToSourcePathPrefixedCatalogId(path), cancellationToken);
 
         return catalogInfos
             .Where(catalogInfo => Regex.IsMatch(catalogInfo.Id, _includePattern))
@@ -85,20 +84,21 @@ public class Federation : IDataSource
             .ToArray();
     }
 
-    public async Task<ResourceCatalog> GetCatalogAsync(string catalogId, CancellationToken cancellationToken)
+    public async Task<ResourceCatalog> EnrichCatalogAsync(ResourceCatalog catalog, CancellationToken cancellationToken)
     {
-        var resourceCatalog = await _nexusClient.Catalogs.GetAsync(ToSourcePathPrefixedCatalogId(catalogId), cancellationToken);
-        resourceCatalog = resourceCatalog with { Id = catalogId };
+        var newCatalog = await _nexusClient.V1.Catalogs.GetAsync(ToSourcePathPrefixedCatalogId(catalog.Id), cancellationToken);
+        newCatalog = newCatalog with { Id = catalog.Id };
 
-        var jsonString = JsonSerializer.Serialize(resourceCatalog, _jsonSerializerOptions);
-        var actualResourceCatalog = JsonSerializer.Deserialize<ResourceCatalog>(jsonString, _jsonSerializerOptions)!;
+        // convert from Api.V1.ResourceCatalog to Nexus.DataModel.ResourceCatalog
+        var jsonString = JsonSerializer.Serialize(newCatalog, _jsonSerializerOptions);
+        var actualNewCatalog = JsonSerializer.Deserialize<ResourceCatalog>(jsonString, _jsonSerializerOptions)!;
 
-        return actualResourceCatalog;
+        return catalog.Merge(actualNewCatalog);
     }
 
     public async Task<double> GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken)
     {
-        var availability = await _nexusClient.Catalogs
+        var availability = await _nexusClient.V1.Catalogs
             .GetAvailabilityAsync(ToSourcePathPrefixedCatalogId(catalogId), begin, end, end - begin, cancellationToken);
 
         return availability.Data[0];
@@ -106,7 +106,7 @@ public class Federation : IDataSource
 
     public async Task<(DateTime Begin, DateTime End)> GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
     {
-        var timeRange = await _nexusClient.Catalogs
+        var timeRange = await _nexusClient.V1.Catalogs
             .GetTimeRangeAsync(ToSourcePathPrefixedCatalogId(catalogId), cancellationToken);
 
         return (timeRange.Begin, timeRange.End);
@@ -116,7 +116,7 @@ public class Federation : IDataSource
     {
         foreach (var request in requests)
         {
-            var response = await _nexusClient.Data.GetStreamAsync(ToSourcePathPrefixedCatalogId(request.CatalogItem.ToPath()), begin, end, cancellationToken);
+            var response = await _nexusClient.V1.Data.GetStreamAsync(ToSourcePathPrefixedCatalogId(request.CatalogItem.ToPath()), begin, end, cancellationToken);
             var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
             var targetBuffer = request.Data;
 

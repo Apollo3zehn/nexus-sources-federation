@@ -1,3 +1,7 @@
+## v2.0.0-beta.33 - 2024-12-17
+
+- Follow Nexus changes
+
 ## v2.0.0-beta.25 - 2024-09-27
 
 - Fix nested catalogs not being loaded properly.
