@@ -7,16 +7,36 @@ using Nexus.Extensibility;
 
 namespace Nexus.Sources;
 
+/// <summary>
+/// Represents the settings for the federation data source.
+/// </summary>
+/// <param name="AccessToken">The access token used for authentication.</param>
+/// <param name="SourcePath">The optional source path. Default is '/'.</param>
+/// <param name="MountPoint">The optional mount point. Default is '/'.</param>
+/// <param name="IncludePattern">The optional include pattern.</param>
+public record FederationSettings(
+    string AccessToken,
+    string? SourcePath,
+    string? MountPoint,
+    string? IncludePattern
+);
+
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+
 [ExtensionDescription(
     "Provides access to other Nexus databases.",
     "https://github.com/Apollo3zehn/nexus-sources-federation",
     "https://github.com/Apollo3zehn/nexus-sources-federation")]
-public class Federation : IDataSource
+public class Federation : IDataSource<FederationSettings>
 {
-    private DataSourceContext _context = default!;
+    private DataSourceContext<FederationSettings> _context = default!;
+
     private Api.INexusClient _nexusClient = default!;
+
     private string _sourcePath = "/";
+    
     private string _mountPoint = "/";
+
     private string _includePattern = default!;
 
     private static readonly JsonSerializerOptions _jsonSerializerOptions;
@@ -30,9 +50,14 @@ public class Federation : IDataSource
     public Func<HttpClient, Api.INexusClient> CreateNexusClient { get; set; }
         = httpClient => new Api.NexusClient(httpClient);
 
-    public Task SetContextAsync(DataSourceContext context, ILogger logger, CancellationToken cancellationToken)
+    public Task SetContextAsync(
+        DataSourceContext<FederationSettings> context,
+        ILogger logger,
+        CancellationToken cancellationToken
+    )
     {
         _context = context;
+        var settings = context.SourceConfiguration;
 
         // http client
         if (_context.ResourceLocator is null)
@@ -44,31 +69,32 @@ public class Federation : IDataSource
         };
 
         // token
-        var token = (_context.SourceConfiguration?.GetStringValue($"access-token")) ?? throw new Exception("The access-token property is not set.");
-
         _nexusClient = CreateNexusClient(httpClient);
-        _nexusClient.SignIn(token);
+        _nexusClient.SignIn(settings.AccessToken);
 
         // source-path
-        var sourcePath = _context.SourceConfiguration?.GetStringValue($"source-path");
+        var sourcePath = settings.SourcePath;
 
         if (sourcePath is not null)
             _sourcePath = '/' + sourcePath.Trim('/');
 
         // mount-point
-        var mountPoint = _context.SourceConfiguration?.GetStringValue($"mount-point");
+        var mountPoint = settings.MountPoint;
 
         if (mountPoint is not null)
             _mountPoint = '/' + mountPoint.Trim('/');
 
         // include-pattern
-        var includePattern = _context.SourceConfiguration?.GetStringValue($"include-pattern");
+        var includePattern = settings.IncludePattern;
         _includePattern = includePattern ?? "";
 
         return Task.CompletedTask;
     }
 
-    public async Task<CatalogRegistration[]> GetCatalogRegistrationsAsync(string path, CancellationToken cancellationToken)
+    public async Task<CatalogRegistration[]> GetCatalogRegistrationsAsync(
+        string path,
+        CancellationToken cancellationToken
+    )
     {
         if (path == "/")
             path = _mountPoint;
@@ -84,7 +110,10 @@ public class Federation : IDataSource
             .ToArray();
     }
 
-    public async Task<ResourceCatalog> EnrichCatalogAsync(ResourceCatalog catalog, CancellationToken cancellationToken)
+    public async Task<ResourceCatalog> EnrichCatalogAsync(
+        ResourceCatalog catalog,
+        CancellationToken cancellationToken
+    )
     {
         var newCatalog = await _nexusClient.V1.Catalogs.GetAsync(ToSourcePathPrefixedCatalogId(catalog.Id), cancellationToken);
         newCatalog = newCatalog with { Id = catalog.Id };
@@ -96,7 +125,12 @@ public class Federation : IDataSource
         return catalog.Merge(actualNewCatalog);
     }
 
-    public async Task<double> GetAvailabilityAsync(string catalogId, DateTime begin, DateTime end, CancellationToken cancellationToken)
+    public async Task<double> GetAvailabilityAsync(
+        string catalogId,
+        DateTime begin,
+        DateTime end,
+        CancellationToken cancellationToken
+    )
     {
         var availability = await _nexusClient.V1.Catalogs
             .GetAvailabilityAsync(ToSourcePathPrefixedCatalogId(catalogId), begin, end, end - begin, cancellationToken);
@@ -104,15 +138,25 @@ public class Federation : IDataSource
         return availability.Data[0];
     }
 
-    public async Task<(DateTime Begin, DateTime End)> GetTimeRangeAsync(string catalogId, CancellationToken cancellationToken)
+    public async Task<CatalogTimeRange> GetTimeRangeAsync(
+        string catalogId,
+        CancellationToken cancellationToken
+    )
     {
         var timeRange = await _nexusClient.V1.Catalogs
             .GetTimeRangeAsync(ToSourcePathPrefixedCatalogId(catalogId), cancellationToken);
 
-        return (timeRange.Begin, timeRange.End);
+        return new CatalogTimeRange(timeRange.Begin, timeRange.End);
     }
 
-    public async Task ReadAsync(DateTime begin, DateTime end, ReadRequest[] requests, ReadDataHandler readData, IProgress<double> progress, CancellationToken cancellationToken)
+    public async Task ReadAsync(
+        DateTime begin,
+        DateTime end,
+        ReadRequest[] requests,
+        ReadDataHandler readData,
+        IProgress<double> progress,
+        CancellationToken cancellationToken
+    )
     {
         foreach (var request in requests)
         {
@@ -142,3 +186,5 @@ public class Federation : IDataSource
         return Path.Combine(_sourcePath, catalogId[_mountPoint.Length..].TrimStart('/'));
     }
 }
+
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member

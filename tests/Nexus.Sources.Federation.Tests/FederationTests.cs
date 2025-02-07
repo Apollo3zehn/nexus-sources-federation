@@ -53,18 +53,18 @@ public class FederationTests
             .SetupGet(client => client.V1.Catalogs)
             .Returns(catalogsClient);
 
-        var dataSource = new Federation() { CreateNexusClient = _ => nexusClient } as IDataSource;
+        var dataSource = (IDataSource<FederationSettings>)new Federation() { CreateNexusClient = _ => nexusClient };
 
-        var context = new DataSourceContext(
+        var context = new DataSourceContext<FederationSettings>(
             ResourceLocator: new Uri("https://example.com"),
-            SystemConfiguration: default!,
-            SourceConfiguration: new Dictionary<string, JsonElement>()
-            {
-                ["access-token"] = JsonSerializer.SerializeToElement(""),
-                ["source-path"] = JsonSerializer.SerializeToElement(sourcePath),
-                ["mount-point"] = JsonSerializer.SerializeToElement(mountPoint),
-            },
-            RequestConfiguration: default!);
+            SourceConfiguration: new FederationSettings(
+                AccessToken: "",
+                SourcePath: sourcePath,
+                MountPoint: mountPoint,
+                IncludePattern: default
+            ),
+            RequestConfiguration: default!
+        );
 
         await dataSource.SetContextAsync(context, NullLogger.Instance, CancellationToken.None);
 
@@ -106,16 +106,13 @@ public class FederationTests
             .SetupGet(client => client.V1.Catalogs)
             .Returns(catalogsClient);
 
-        var dataSource = new Federation() { CreateNexusClient = _ => nexusClient } as IDataSource;
+        var dataSource = (IDataSource<FederationSettings>)new Federation() { CreateNexusClient = _ => nexusClient };
 
-        var context = new DataSourceContext(
+        var context = new DataSourceContext<FederationSettings>(
             ResourceLocator: new Uri("https://example.com"),
-            SystemConfiguration: default!,
-            SourceConfiguration: new Dictionary<string, JsonElement>()
-            {
-                ["access-token"] = JsonSerializer.SerializeToElement("")
-            },
-            RequestConfiguration: default!);
+            SourceConfiguration: new FederationSettings(AccessToken: "", default, default, default),
+            RequestConfiguration: default!
+        );
 
         await dataSource.SetContextAsync(context, NullLogger.Instance, CancellationToken.None);
 
